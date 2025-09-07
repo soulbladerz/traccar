@@ -8,9 +8,12 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.traccar.Context;
+import org.traccar.Config;
+import org.traccar.LifecycleObject;
 import org.traccar.iotm.IotmStaticSignal;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,33 +27,43 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   traccar/command/862123456789012/static1   payload: "1"  -> STATIC SIGNAL1 = 1
  *   traccar/command/862123456789012/static2   payload: "0"  -> STATIC SIGNAL2 = 0
  */
-public final class MqttCommandService implements AutoCloseable, MqttCallback {
+@Singleton
+public final class MqttCommandService implements LifecycleObject, MqttCallback {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MqttCommandService.class);
 
-    private final MqttClient client;
-    private final String topicPattern;
-    private final int qos;
+    private final Config config;
+    private MqttClient client;
+    private String topicPattern;
+    private int qos;
     private final AtomicInteger uniq = new AtomicInteger(0);
+    private boolean enabled;
 
-    public MqttCommandService() throws Exception {
-        var cfg = Context.getConfig();
-        if (!cfg.getBoolean("mqtt.cmd.enable", false)) {
-            client = null;
-            topicPattern = null;
-            qos = 0;
+    @Inject
+    public MqttCommandService(Config config) {
+        this.config = config;
+    }
+
+    @Override
+    public void start() throws Exception {
+        enabled = config.getBoolean("mqtt.cmd.enable", false);
+        if (!enabled) {
             LOGGER.info("MQTT command service disabled (mqtt.cmd.enable=false)");
             return;
         }
 
-        String url = cfg.getString("mqtt.cmd.url", "tcp://localhost:1883");
-        String clientId = cfg.getString("mqtt.cmd.clientId", "traccar-cmd-" + System.nanoTime());
-        this.topicPattern = cfg.getString("mqtt.cmd.topic", "traccar/command/+/+");
-        this.qos = cfg.getInteger("mqtt.cmd.qos", 1);
+        String url = config.getString("mqtt.cmd.url", "tcp://localhost:1883");
+        String clientId = config.getString("mqtt.cmd.clientId", "traccar-cmd-" + System.nanoTime());
+        this.topicPattern = config.getString("mqtt.cmd.topic", "traccar/command/+/+");
+        this.qos = config.getInteger("mqtt.cmd.qos", 1);
 
         MqttConnectOptions opts = new MqttConnectOptions();
-        if (cfg.hasKey("mqtt.cmd.username")) opts.setUserName(cfg.getString("mqtt.cmd.username"));
-        if (cfg.hasKey("mqtt.cmd.password")) opts.setPassword(cfg.getString("mqtt.cmd.password").toCharArray());
+        if (config.hasKey("mqtt.cmd.username")) {
+            opts.setUserName(config.getString("mqtt.cmd.username"));
+        }
+        if (config.hasKey("mqtt.cmd.password")) {
+            opts.setPassword(config.getString("mqtt.cmd.password").toCharArray());
+        }
         opts.setAutomaticReconnect(true);
         opts.setCleanSession(true);
 
@@ -63,9 +76,12 @@ public final class MqttCommandService implements AutoCloseable, MqttCallback {
     }
 
     @Override
-    public void close() throws Exception {
+    public void stop() throws Exception {
+        if (!enabled) return;
         try {
-            if (client != null && client.isConnected()) client.disconnect();
+            if (client != null && client.isConnected()) {
+                client.disconnect();
+            }
         } catch (MqttException e) {
             LOGGER.warn("MQTT disconnect error: {}", e.getMessage());
         }
@@ -86,9 +102,13 @@ public final class MqttCommandService implements AutoCloseable, MqttCallback {
             String action = parts[3].toLowerCase();
 
             int signal;
-            if ("static1".equals(action)) signal = 1;
-            else if ("static2".equals(action)) signal = 2;
-            else return; // ignore other actions
+            if ("static1".equals(action)) {
+                signal = 1;
+            } else if ("static2".equals(action)) {
+                signal = 2;
+            } else {
+                return; // ignore other actions
+            }
 
             String payloadStr = new String(message.getPayload(), StandardCharsets.UTF_8).trim();
             boolean on = parseBoolean(payloadStr);
@@ -98,7 +118,7 @@ public final class MqttCommandService implements AutoCloseable, MqttCallback {
 
             String outTopic = imei + "/OUTC";
             MqttMessage out = new MqttMessage(payload);
-            out.setQos(Math.max(1, this.qos)); // ensure QoS >=1 for device control
+            out.setQos(Math.max(1, this.qos)); // ensure QoS >=1
             client.publish(outTopic, out);
 
             LOGGER.info("Published IoTM OUTC cmd: imei={} signal={} value={} bytes={}",
