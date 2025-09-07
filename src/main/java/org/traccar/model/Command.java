@@ -25,6 +25,8 @@ import org.traccar.storage.StorageName;
 public class Command extends BaseCommand {
 
     public static final String TYPE_CUSTOM = "custom";
+    public static final String TYPE_STATIC_SIGNAL1 = "staticSignal1";
+    public static final String TYPE_STATIC_SIGNAL2 = "staticSignal2";
     public static final String TYPE_IDENTIFICATION = "deviceIdentification";
     public static final String TYPE_POSITION_SINGLE = "positionSingle";
     public static final String TYPE_POSITION_PERIODIC = "positionPeriodic";
@@ -84,6 +86,7 @@ public class Command extends BaseCommand {
     public static final String KEY_SERVER = "server";
     public static final String KEY_PORT = "port";
     public static final String KEY_NO_QUEUE = "noQueue";
+    public static final String KEY_VALUE = "value";
 
     @QueryIgnore
     @Override
