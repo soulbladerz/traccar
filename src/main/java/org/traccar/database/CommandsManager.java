@@ -79,6 +79,30 @@ public class CommandsManager implements BroadcastInterface {
         long deviceId = command.getDeviceId();
         Device device = storage.getObject(Device.class, new Request(
                 new Columns.All(), new Condition.Equals("id", deviceId)));
+        public QueuedCommand sendCommand(Command command) throws Exception {
+    long deviceId = command.getDeviceId();
+    Device device = storage.getObject(Device.class, new Request(
+            new Columns.All(), new Condition.Equals("id", deviceId)));
+
+    // --- Handle Xirgo IoTM STATIC SIGNAL commands via MQTT OUTC ---
+    if (Command.TYPE_STATIC_SIGNAL1.equals(command.getType())
+            || Command.TYPE_STATIC_SIGNAL2.equals(command.getType())) {
+
+        String uniqueId = device.getUniqueId(); // IMEI for IoTM topics
+        int signal = Command.TYPE_STATIC_SIGNAL1.equals(command.getType()) ? 1 : 2;
+        String raw = command.getString(Command.KEY_VALUE);
+        boolean on = raw != null && (
+                raw.equals("1") || raw.equalsIgnoreCase("on") || raw.equalsIgnoreCase("true"));
+
+        // Use MQTT bridge to publish IoTM Output Control (Structure v2) to <IMEI>/OUTC
+        org.traccar.Context.getInjector()
+                .getInstance(org.traccar.mqtt.MqttCommandService.class)
+                .publishStatic(uniqueId, signal, on);
+
+        return null; // handled, no queuing
+    }
+    // --- end custom block ---
+  
         Position position = storage.getObject(Position.class, new Request(
                 new Columns.All(), new Condition.Equals("id", device.getPositionId())));
         BaseProtocol protocol = position != null ? serverManager.getProtocol(position.getProtocol()) : null;
