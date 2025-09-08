@@ -12,8 +12,8 @@ import org.traccar.Config;
 import org.traccar.LifecycleObject;
 import org.traccar.iotm.IotmStaticSignal;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
