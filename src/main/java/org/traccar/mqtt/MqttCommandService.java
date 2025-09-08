@@ -9,8 +9,6 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.traccar.config.Config;
-import org.traccar.model.Command;
-import org.traccar.model.Device;
 import org.traccar.LifecycleObject;
 import org.traccar.iotm.IotmStaticSignal;
 
