@@ -79,10 +79,6 @@ public class CommandsManager implements BroadcastInterface {
         long deviceId = command.getDeviceId();
         Device device = storage.getObject(Device.class, new Request(
                 new Columns.All(), new Condition.Equals("id", deviceId)));
-        public QueuedCommand sendCommand(Command command) throws Exception {
-    long deviceId = command.getDeviceId();
-    Device device = storage.getObject(Device.class, new Request(
-            new Columns.All(), new Condition.Equals("id", deviceId)));
 
     // --- Handle Xirgo IoTM STATIC SIGNAL commands via MQTT OUTC ---
     if (Command.TYPE_STATIC_SIGNAL1.equals(command.getType())
