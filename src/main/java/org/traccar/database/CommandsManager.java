@@ -91,7 +91,7 @@ public class CommandsManager implements BroadcastInterface {
                 raw.equals("1") || raw.equalsIgnoreCase("on") || raw.equalsIgnoreCase("true"));
 
         // Use MQTT bridge to publish IoTM Output Control (Structure v2) to <IMEI>/OUTC
-        org.traccar.Context.getInjector()
+        org.traccar.Main.getInjector()
                 .getInstance(org.traccar.mqtt.MqttCommandService.class)
                 .publishStatic(uniqueId, signal, on);
 
