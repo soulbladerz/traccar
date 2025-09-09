@@ -21,6 +21,10 @@ import com.google.inject.ProvisionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.traccar.broadcast.BroadcastService;
+import org.traccar.config.Config;
+import org.traccar.config.Keys;
+import org.traccar.forward.EventForwarder;
+import org.traccar.forward.PositionForwarder;
 import org.traccar.schedule.ScheduleManager;
 import org.traccar.storage.DatabaseModule;
 import org.traccar.web.WebModule;
@@ -120,12 +124,27 @@ public final class Main {
             LOGGER.info("Starting server...");
 
             var services = new ArrayList<LifecycleObject>();
+            var closeables = new ArrayList<AutoCloseable>();
             for (var clazz : List.of(
                     ScheduleManager.class, ServerManager.class, WebServer.class, BroadcastService.class, org.traccar.mqtt.MqttCommandService.class)) {
                 var service = injector.getInstance(clazz);
                 if (service != null) {
                     service.start();
                     services.add(service);
+                }
+            }
+
+            var config = injector.getInstance(Config.class);
+            if (config.hasKey(Keys.EVENT_FORWARD_URL)) {
+                var eventForwarder = injector.getInstance(EventForwarder.class);
+                if (eventForwarder instanceof AutoCloseable closeable) {
+                    closeables.add(closeable);
+                }
+            }
+            if (config.hasKey(Keys.FORWARD_URL)) {
+                var positionForwarder = injector.getInstance(PositionForwarder.class);
+                if (positionForwarder instanceof AutoCloseable closeable) {
+                    closeables.add(closeable);
                 }
             }
 
@@ -137,6 +156,13 @@ public final class Main {
                 for (var service : services) {
                     try {
                         service.stop();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                for (var closeable : closeables) {
+                    try {
+                        closeable.close();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
