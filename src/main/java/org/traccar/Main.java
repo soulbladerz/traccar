@@ -126,7 +126,8 @@ public final class Main {
             var services = new ArrayList<LifecycleObject>();
             var closeables = new ArrayList<AutoCloseable>();
             for (var clazz : List.of(
-                    ScheduleManager.class, ServerManager.class, WebServer.class, BroadcastService.class, org.traccar.mqtt.MqttCommandService.class)) {
+                    ScheduleManager.class, ServerManager.class, WebServer.class, BroadcastService.class,
+                    org.traccar.mqtt.MqttCommandService.class, org.traccar.mqtt.MqttTelemetryService.class)) {
                 var service = injector.getInstance(clazz);
                 if (service != null) {
                     service.start();
