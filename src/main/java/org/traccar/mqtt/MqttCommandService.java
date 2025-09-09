@@ -84,6 +84,14 @@ public final class MqttCommandService implements LifecycleObject, MqttCallback {
             }
         } catch (MqttException e) {
             LOGGER.warn("MQTT disconnect error: {}", e.getMessage());
+        } finally {
+            if (client != null) {
+                try {
+                    client.close();
+                } catch (MqttException e) {
+                    LOGGER.warn("MQTT close error: {}", e.getMessage());
+                }
+            }
         }
     }
 
