@@ -21,7 +21,7 @@ import org.traccar.config.Keys;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class PositionForwarderMqtt implements PositionForwarder {
+public class PositionForwarderMqtt implements PositionForwarder, AutoCloseable {
 
     private final MqttClient mqttClient;
     private final ObjectMapper objectMapper;
@@ -42,6 +42,11 @@ public class PositionForwarderMqtt implements PositionForwarder {
         } catch (JsonProcessingException e) {
             resultHandler.onResult(false, e);
         }
+    }
+
+    @Override
+    public void close() {
+        mqttClient.close();
     }
 
 }
