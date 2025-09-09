@@ -80,4 +80,12 @@ public class MqttClient {
                 .whenComplete(whenComplete);
     }
 
+    public void close() {
+        try {
+            client.disconnect().join();
+        } catch (RuntimeException e) {
+            LOGGER.warn("MQTT disconnect error", e);
+        }
+    }
+
 }
