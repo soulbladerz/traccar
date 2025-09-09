@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.nio.charset.StandardCharsets;
 
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
@@ -76,7 +77,8 @@ public class MqttClient {
 
     public void publish(
             String pubTopic, String payload, BiConsumer<? super Mqtt5PublishResult, ? super Throwable> whenComplete) {
-        client.publishWith().topic(pubTopic).qos(MqttQos.AT_LEAST_ONCE).payload(payload.getBytes()).send()
+        client.publishWith().topic(pubTopic).qos(MqttQos.AT_LEAST_ONCE)
+                .payload(payload.getBytes(StandardCharsets.UTF_8)).send()
                 .whenComplete(whenComplete);
     }
 
