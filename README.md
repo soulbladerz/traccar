@@ -27,6 +27,23 @@ Some of the available features include:
 - Account and device management
 - Email and SMS support
 
+### MQTT Telemetry JSON
+
+Traccar can consume telemetry data from MQTT brokers. To enable JSON payload decoding set
+`mqtt.tlm.json` to `true`. Messages are expected to contain a JSON object with fields like:
+
+```
+{
+  "deviceId": 1,
+  "time": "2020-01-01T00:00:00Z",
+  "latitude": 10.0,
+  "longitude": 20.0,
+  "valid": true
+}
+```
+
+Non‑JSON payloads are decoded using the existing IoTM binary protocol.
+
 ## Build
 
 Please read [build from source documentation](https://www.traccar.org/build/) on the official website.
