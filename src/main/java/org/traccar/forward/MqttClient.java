@@ -27,7 +27,12 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5ClientBuilder;
 import com.hivemq.client.mqtt.mqtt5.message.auth.Mqtt5SimpleAuth;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5PublishResult;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MqttClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MqttClient.class);
 
     private final Mqtt5AsyncClient client;
 
@@ -48,7 +53,9 @@ public class MqttClient {
 
         client = builder.buildAsync();
         client.connectWith().send().whenComplete((message, e) -> {
-            throw new RuntimeException(e);
+            if (e != null) {
+                LOGGER.warn("MQTT connection failed", e);
+            }
         });
     }
 
