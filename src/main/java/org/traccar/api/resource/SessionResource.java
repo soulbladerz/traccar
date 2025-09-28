@@ -74,27 +74,61 @@ public class SessionResource extends BaseResource {
 
     @PermitAll
     @GET
-    public User get(@QueryParam("token") String token) throws StorageException, IOException, GeneralSecurityException {
+    public User get(
+        @QueryParam("token") String token,
+        @HeaderParam("Authorization") String authorization)
+        throws StorageException, IOException, GeneralSecurityException {
 
-        if (token != null) {
-            LoginResult loginResult = loginService.login(token);
+    // 1. Token via query param
+    if (token != null) {
+        LoginResult loginResult = loginService.login(token);
+        if (loginResult != null) {
+            User user = loginResult.getUser();
+            SessionHelper.userLogin(actionLogger, request, user, loginResult.getExpiration());
+            return user;
+        }
+    }
+
+    // 2. Authorization: Bearer <token>
+    if (authorization != null && authorization.startsWith("Bearer ")) {
+        String bearerToken = authorization.substring("Bearer ".length());
+        LoginResult loginResult = loginService.login(bearerToken);
+        if (loginResult != null) {
+            User user = loginResult.getUser();
+            SessionHelper.userLogin(actionLogger, request, user, loginResult.getExpiration());
+            return user;
+        }
+    }
+
+    // 3. Authorization: Basic <base64(user:pass)>
+    if (authorization != null && authorization.startsWith("Basic ")) {
+        String base64Credentials = authorization.substring("Basic ".length());
+        String credentials = new String(java.util.Base64.getDecoder().decode(base64Credentials));
+        String[] parts = credentials.split(":", 2);
+        if (parts.length == 2) {
+            String email = parts[0];
+            String password = parts[1];
+            LoginResult loginResult = loginService.login(email, password, null);
             if (loginResult != null) {
                 User user = loginResult.getUser();
-                SessionHelper.userLogin(actionLogger, request, user, loginResult.getExpiration());
+                SessionHelper.userLogin(actionLogger, request, user, null);
                 return user;
             }
         }
+    }
 
-        Long userId = (Long) request.getSession().getAttribute(SessionHelper.USER_ID_KEY);
-        if (userId != null) {
-            User user = permissionsService.getUser(userId);
-            if (user != null) {
-                return user;
-            }
+    // 4. Cookie-based session
+    Long userId = (Long) request.getSession().getAttribute(SessionHelper.USER_ID_KEY);
+    if (userId != null) {
+        User user = permissionsService.getUser(userId);
+        if (user != null) {
+            return user;
         }
+    }
 
         throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND).build());
     }
+
 
     @Path("{id}")
     @GET
